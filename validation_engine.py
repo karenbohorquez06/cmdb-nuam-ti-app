@@ -16,6 +16,8 @@ def validate_types(df: pd.DataFrame):
 
 def data_quality_score(df: pd.DataFrame):
     total = df.size
+    if total == 0:
+        return 0.0
     nulls = df.isnull().sum().sum()
     return round(100 * (1 - nulls / total), 2)
 

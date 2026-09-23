@@ -1,0 +1,30 @@
+# Entornos virtuales
+.venv/
+.venv-1/
+venv/
+env/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Base de datos local (se regenera sola con datos de ejemplo)
+*.db
+*.sqlite3
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Archivos de trabajo y salidas
+*.log
+*_limpio.csv
+*_limpio.xlsx
+reporte_comparacion.xlsx
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

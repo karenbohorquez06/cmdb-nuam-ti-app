@@ -1,8 +1,7 @@
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
-
-from datetime import datetime
 
 import streamlit as st
  
@@ -10,7 +9,9 @@ class DatabaseManager:
 
     def __init__(self, db_path="cmdb_quality.db"):
 
-        self.db_path = db_path
+        # Use one stable database location regardless of the terminal working directory.
+        self.db_path = str(Path(db_path) if Path(db_path).is_absolute()
+                           else Path(__file__).resolve().parent / db_path)
 
         self.init_database()
 
@@ -74,6 +75,35 @@ class DatabaseManager:
 
             )
 
+        ''')
+
+        # Tablas maestras usadas por las validaciones de integridad referencial
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS proveedores (
+                razon_social TEXT PRIMARY KEY,
+                nit TEXT,
+                contacto TEXT,
+                email TEXT,
+                telefono TEXT
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS aplicaciones (
+                nombre TEXT PRIMARY KEY,
+                version TEXT,
+                entorno TEXT,
+                responsable TEXT
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                nombre TEXT PRIMARY KEY,
+                email TEXT NOT NULL,
+                area TEXT,
+                cargo TEXT
+            )
         ''')
 
         conn.commit()
@@ -285,6 +315,22 @@ class DatabaseManager:
         for user in usuarios_ejemplo:
 
             self.insertar_usuario(*user)
+
+    def limpiar_proveedores_aplicaciones(self):
+        """Elimina todos los registros de proveedores y aplicaciones sin afectar otras tablas."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        # Borrar contenidos, conservar las tablas
+        try:
+            cursor.execute('DELETE FROM proveedores')
+        except Exception:
+            pass
+        try:
+            cursor.execute('DELETE FROM aplicaciones')
+        except Exception:
+            pass
+        conn.commit()
+        conn.close()
  
 # Inicializar base de datos
 
@@ -294,21 +340,8 @@ def init_db():
 
     db = DatabaseManager()
 
-    # Cargar datos de ejemplo si la tabla está vacía
-
-    conn = sqlite3.connect(db.db_path)
-
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM proveedores")
-
-    count = cursor.fetchone()[0]
-
-    conn.close()
-
-    if count == 0:
-
-        db.cargar_datos_referencia()
+    # Re-run the idempotent schema creation for cached Streamlit resources.
+    db.init_database()
 
     return db
  
